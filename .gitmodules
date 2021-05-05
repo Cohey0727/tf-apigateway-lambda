@@ -1,0 +1,3 @@
+[submodule "terraform/modules/lambda"]
+	path = terraform/modules/lambda
+	url = https://github.com/Cohey0727/tf-lambda-module.git
