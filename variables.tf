@@ -5,3 +5,7 @@ variable "aws_region" {
 variable "aws_profile" {
   default = "default"
 }
+
+variable "app_name" {
+  default = "tf-restapi"
+}
