@@ -1,0 +1,6 @@
+[submodule "modules/apigateway"]
+	path = modules/apigateway
+	url = https://github.com/Cohey0727/tf-apigateway
+[submodule "modules/lambda"]
+	path = modules/lambda
+	url = https://github.com/Cohey0727/tf-lambda
