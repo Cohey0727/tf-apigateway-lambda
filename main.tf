@@ -13,15 +13,6 @@ module "apigateway" {
   app_name = var.app_name
 }
 
-
-resource "aws_api_gateway_deployment" "rest_api" {
-  stage_name  = "api"
-  rest_api_id = module.apigateway.api_gateway_id
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 resource "aws_lambda_permission" "rest_api_invoke" {
   function_name = module.lambda.lambda_arn
   action        = "lambda:InvokeFunction"
@@ -29,32 +20,50 @@ resource "aws_lambda_permission" "rest_api_invoke" {
   source_arn    = "${module.apigateway.api_gateway_execution_arn}/*"
 }
 
-resource "aws_api_gateway_resource" "resource" {
+resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = module.apigateway.api_gateway_id
   parent_id   = module.apigateway.api_gateway_root_resource_id
-  path_part   = "hello"
+  path_part   = "root"
 }
 
-resource "aws_api_gateway_method" "method" {
+resource "aws_api_gateway_method" "proxy" {
   rest_api_id   = module.apigateway.api_gateway_id
-  resource_id   = aws_api_gateway_resource.resource.id
-  http_method   = "POST"
+  resource_id   = aws_api_gateway_resource.proxy.id
+  http_method   = "ANY"
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "restapi_integration" {
-  rest_api_id             = module.apigateway.api_gateway_id
-  resource_id             = module.apigateway.api_gateway_root_resource_id
-  uri                     = module.lambda.lambda_invoke_arn
-  http_method             = aws_api_gateway_method.method.http_method
+resource "aws_api_gateway_integration" "lambda" {
+  rest_api_id = module.apigateway.api_gateway_id
+  resource_id = aws_api_gateway_method.proxy.resource_id
+  http_method = aws_api_gateway_method.proxy.http_method
+
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
+  uri                     = module.lambda.lambda_invoke_arn
 }
 
-# output "EndpointURL" {
-#   value = aws_api_gateway_deployment.rest_api.invoke_url
-# }
+resource "aws_api_gateway_deployment" "rest_api" {
+  stage_name  = "api"
+  rest_api_id = module.apigateway.api_gateway_id
+  depends_on = [
+    aws_api_gateway_integration.lambda,
+  ]
+}
 
-# output "RestAPIId" {
-#   value = module.apigateway.api_gateway_id
-# }
+output "EndpointURL" {
+  value = aws_api_gateway_deployment.rest_api.invoke_url
+}
+
+output "RestAPIId" {
+  value = module.apigateway.api_gateway_id
+}
+
+output "LambdaFunctionName" {
+  value = module.lambda.lambda_function_name
+}
+
+output "LambdaSourceS3Bucket" {
+  value = module.lambda.s3_bucket_id
+}
+
